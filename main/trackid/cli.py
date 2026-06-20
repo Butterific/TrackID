@@ -1,8 +1,8 @@
 import os
 import json
 import numpy as np
-import librosa
 import argparse
+import sys
 
 def get_db_path():
     path = os.path.join(os.path.expanduser("~"), "Documents")
@@ -33,8 +33,11 @@ def get_fingerprint(filepath):
         print(f"File not found: {filepath}")
         return None
     try:
-        y, sr = librosa.load(filepath, sr=22050, duration=30)
-        stft = np.abs(librosa.stft(y))
+        # Inline import prevents the CLI from lagging on startup
+        import librosa
+        
+        y, sr = librosa.load(filepath, sr=None, duration=10)
+        stft = np.abs(librosa.stft(y, n_fft=2048, hop_length=2048))
         spectrum = np.mean(stft, axis=1)
         
         mx = np.max(spectrum)
@@ -84,7 +87,7 @@ def scan_track(args):
             best_match = name
 
     print("\n--- Scan Results ---")
-    if best_score > 0.85:
+    if best_score > 0.80:
         print(f"Match: {best_match} ({best_score:.2%})")
     else:
         print("No definitive match found.")
@@ -118,6 +121,18 @@ def clear_db(args):
         print("Database cleared.")
     else:
         print("Operation cancelled.")
+
+def show_help(args=None):
+    print("""
+Available Commands:
+  add <file> --name "<name>"   Fingerprint and save a track to the database
+  scan <file>                  Scan an audio clip to find a match
+  list                         Show all indexed track names
+  remove --name "<name>"       Delete a specific track from the database
+  clear                        Wipe the entire local database
+  about                        Show splash art and version info
+  help                         Show this help menu
+    """)
 
 def draw_gradient_headphones(args=None):
     headphones_art = [
@@ -193,30 +208,29 @@ def draw_gradient_headphones(args=None):
     print(final_line_output + reset_code)
 
 def main():
+    # If user ran the CLI without any arguments, show headphones and exit
+    if len(sys.argv) == 1:
+        draw_gradient_headphones()
+        return
+
     parser = argparse.ArgumentParser(description="Track ID Utility")
     subparsers = parser.add_subparsers(dest="cmd", required=True)
 
-    # Command: add
     add_p = subparsers.add_parser("add")
     add_p.add_argument("file")
     add_p.add_argument("--name", required=True)
 
-    # Command: scan
     scan_p = subparsers.add_parser("scan")
     scan_p.add_argument("file")
 
-    # Command: list
     subparsers.add_parser("list")
 
-    # Command: remove
     remove_p = subparsers.add_parser("remove")
     remove_p.add_argument("--name", required=True)
 
-    # Command: clear
     subparsers.add_parser("clear")
-
-    # Command: about
     subparsers.add_parser("about")
+    subparsers.add_parser("help")
 
     args = parser.parse_args()
 
@@ -226,7 +240,8 @@ def main():
         "list": list_tracks,
         "remove": remove_track,
         "clear": clear_db,
-        "about": draw_gradient_headphones
+        "about": draw_gradient_headphones,
+        "help": show_help
     }
 
     command_map[args.cmd](args)
