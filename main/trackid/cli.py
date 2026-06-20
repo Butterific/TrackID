@@ -46,23 +46,23 @@ def get_fingerprint(filepath):
         print(f"Failed to process {filepath}: {e}")
         return None
 
-def add_track(filepath, name):
+def add_track(args):
     db = load_db()
-    print(f"Processing: {name}")
-    fp = get_fingerprint(filepath)
+    print(f"Processing: {args.name}")
+    fp = get_fingerprint(args.file)
     if fp:
-        db[name] = fp
+        db[args.name] = fp
         save_db(db)
         print("Track saved successfully.")
 
-def scan_track(filepath):
+def scan_track(args):
     db = load_db()
     if not db:
         print("Database is empty. Add tracks first.")
         return
 
     print("Scanning sample...")
-    query_fp = get_fingerprint(filepath)
+    query_fp = get_fingerprint(args.file)
     if not query_fp:
         return
 
@@ -92,23 +92,144 @@ def scan_track(filepath):
             print(f"Closest guess: {best_match} ({best_score:.2%})")
     print("--------------------\n")
 
+def list_tracks(args):
+    db = load_db()
+    if not db:
+        print("Database is empty.")
+        return
+    print("\n--- Indexed Tracks ---")
+    for name in db.keys():
+        print(f"- {name}")
+    print("----------------------\n")
+
+def remove_track(args):
+    db = load_db()
+    if args.name in db:
+        del db[args.name]
+        save_db(db)
+        print(f"Removed '{args.name}' from the database.")
+    else:
+        print(f"Track '{args.name}' not found in the database.")
+
+def clear_db(args):
+    confirm = input("Are you sure you want to completely wipe the database? (y/N): ")
+    if confirm.lower() == 'y':
+        save_db({})
+        print("Database cleared.")
+    else:
+        print("Operation cancelled.")
+
+def draw_gradient_headphones(args=None):
+    headphones_art = [
+        "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣠⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀",
+        "⠀⡆⠒⢲⠀⠀⠀⠀⠀⢠⡀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⠿⠿⠿⠿⣿⣷⣦⡀⠀⠀⠀",
+        "⠀⡇⠀⡞⠀⠀⠀⠀⠀⠈⡟⠁⠀⠀⢀⣴⣿⠟⠉⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣧⡀⠀",
+        "⠸⠃⠸⠟⠀⠀⠀⠀⢀⣤⡿⠀⠀⢀⣾⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣧⠀",
+        "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠀⠀⠀⢸⣿⠃⠀⠀⢠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⡇",
+        "⠀⠀⠀⠀⠀⠀⠀⠐⡒⠒⠀⠀⠀⣹⣏⣀⣴⣿⣿⡄⠀⠀⠀⠀⠀⣴⣶⣶⣄⣐⣼⣿",
+        "⠀⠀⠀⠀⠀⠀⠀⣠⣵⡀⠀⠀⠀⢽⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⠃",
+        "⠀⠀⠀⠀⠀⠀⠀⠛⠉⠀⠀⠀⠀⠨⣿⣟⣿⣿⣿⣿⡧⠀⠀⠀⢸⣿⣿⣿⣟⣿⡟⠀",
+        "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠄⠀⠀⢳⣿⣿⣿⣿⣿⣿⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⠀",
+        "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⡆⠀⠀⠀⣿⣿⣿⣿⣿⣿⠁⠀⠀⣿⣿⣿⣿⣿⣿⠇⠀",
+        "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⡿⠟⠀⠀⠀⠈⠻⠿⣿⣿⠿⠀⠀⠀⢸⣿⣿⣿⣿⠯⠀⠀",
+        "⠀⠀⣀⠤⠤⠠⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣯⠀⠀⠀⠀⠀⠀⠈⠉⠁⠀⠀⠀⠀",
+        "⢠⠋⠀⠀⠀⠀⠀⠈⠳⡀⠀⠀⢀⣀⠀⠀⠀⠀⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+        "⢸⡀⠀⠀⠀⠀⠀⠀⠀⡇⠀⢰⠉⠈⡆⠀⣀⡜⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+        "⠀⠻⠤⣀⠀⠀⠀⠀⠀⢻⡀⠀⢑⡻⠋⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+        "⠀⠀⠀⠀⠉⠓⠤⣀⡀⠀⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+        "⠀⠀⠀⠀⠀⠀⠀⠈⠹⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+        "⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⢦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
+    ]
+    
+    total_lines = len(headphones_art)
+    reset_code = "\033[0m"
+    
+    for index, line in enumerate(headphones_art):
+        ratio = index / (total_lines - 1)
+        r = int(0 + (255 * ratio))
+        g = int(220 + (35 * ratio))
+        b = 0
+        print(f"\033[38;2;{r};{g};{b}m{line}{reset_code}")
+        
+    print()
+
+    text_lines = ["TrackID", "V.1.0"]
+    for line in text_lines:
+        line_output = ""
+        length = len(line)
+        for col_idx, char in enumerate(line):
+            ratio = col_idx / max(1, length - 1)
+            r = int(0 + (255 * ratio))
+            g = int(220 + (35 * ratio))
+            b = 0
+            line_output += f"\033[38;2;{r};{g};{b}m{char}"
+        print(line_output + reset_code)
+
+    prefix = "Made with 🧈 by "
+    butter_part = "butter"
+    labs_part = "labs"
+    
+    final_line_output = ""
+    prefix_len = len(prefix)
+    for col_idx, char in enumerate(prefix):
+        ratio = col_idx / (prefix_len - 1)
+        r = int(0 + (255 * ratio))
+        g = int(220 + (35 * ratio))
+        b = 0
+        final_line_output += f"\033[38;2;{r};{g};{b}m{char}"
+        
+    butter_len = len(butter_part)
+    for col_idx, char in enumerate(butter_part):
+        ratio = col_idx / max(1, butter_len - 1)
+        r = int(244 + (11 * ratio))
+        g = int(208 + (44 * ratio))
+        b = int(63 + (180 * ratio))
+        final_line_output += f"\033[38;2;{r};{g};{b}m{char}"
+        
+    for char in labs_part:
+        r, g, b = 160, 255, 160
+        final_line_output += f"\033[38;2;{r};{g};{b}m{char}"
+        
+    print(final_line_output + reset_code)
+
 def main():
     parser = argparse.ArgumentParser(description="Track ID Utility")
     subparsers = parser.add_subparsers(dest="cmd", required=True)
 
+    # Command: add
     add_p = subparsers.add_parser("add")
     add_p.add_argument("file")
     add_p.add_argument("--name", required=True)
 
+    # Command: scan
     scan_p = subparsers.add_parser("scan")
     scan_p.add_argument("file")
 
+    # Command: list
+    subparsers.add_parser("list")
+
+    # Command: remove
+    remove_p = subparsers.add_parser("remove")
+    remove_p.add_argument("--name", required=True)
+
+    # Command: clear
+    subparsers.add_parser("clear")
+
+    # Command: about
+    subparsers.add_parser("about")
+
     args = parser.parse_args()
 
-    if args.cmd == "add":
-        add_track(args.file, args.name)
-    elif args.cmd == "scan":
-        scan_track(args.file)
+    command_map = {
+        "add": add_track,
+        "scan": scan_track,
+        "list": list_tracks,
+        "remove": remove_track,
+        "clear": clear_db,
+        "about": draw_gradient_headphones
+    }
+
+    command_map[args.cmd](args)
 
 if __name__ == "__main__":
     main()
