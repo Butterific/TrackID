@@ -1,6 +1,5 @@
 import os
 import json
-import numpy as np
 import argparse
 import sys
 
@@ -33,7 +32,8 @@ def get_fingerprint(filepath):
         print(f"File not found: {filepath}")
         return None
     try:
-        # Inline import prevents the CLI from lagging on startup
+        # Moved heavy scientific imports here so they only load during add/scan tasks
+        import numpy as np
         import librosa
         
         y, sr = librosa.load(filepath, sr=None, duration=10)
@@ -68,6 +68,9 @@ def scan_track(args):
     query_fp = get_fingerprint(args.file)
     if not query_fp:
         return
+
+    # NumPy imported here locally for the vector math
+    import numpy as np
 
     q_vec = np.array(query_fp)
     best_match = None
@@ -208,7 +211,6 @@ def draw_gradient_headphones(args=None):
     print(final_line_output + reset_code)
 
 def main():
-    # If user ran the CLI without any arguments, show headphones and exit
     if len(sys.argv) == 1:
         draw_gradient_headphones()
         return
